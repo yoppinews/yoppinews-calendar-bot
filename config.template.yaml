@@ -1,0 +1,15 @@
+---
+
+global_config:
+  log_level: INFO
+  time_delta: 9
+calendars:
+  -
+    calendar_id: 'calendar-id-01'
+    max_summarized_items: 10
+    summarized_message_template: |-
+      🗓 ${y}/${m}/${d}
+      {summarized_items}
+      #hashtag example.com
+  -
+    calendar_id: 'calendar-id-02'

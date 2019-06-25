@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  yoppinews-calendar-bot
+
+Globals:
+  Function:
+    Timeout: 10
+    Handler: app.lambda_handler
+    Runtime: python3.7
+    MemorySize: 128
+    Environment:
+      Variables:
+        Stage: !Sub ${Stage}
+        ConfigBucket: !Sub ${ConfigBucket}
+        ConfigKeyName: !Sub ${ConfigKeyName}
+
+Parameters:
+  Stage:
+    Type: String
+  LogRetentionInDays:
+    Type: Number
+    Default: 7
+  ConfigBucket:
+    Type: String
+  ConfigKeyName:
+    Type: String
+  TweetTopic:
+    Type: String
+  KMSKeyArn:
+    Type: String
+  GoogleAPIKey:
+    Type: String
+  SummarizeSchedule:
+    Type: String
+    # UTC 15:00 = JST 00:00
+    Default: 'cron(0 15 * * ? *)'
+
+Resources:
+  PipModulesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: yoppinews-calendar-bot pip modules(python 3.x)
+      ContentUri: src/layers/pip_modules
+      RetentionPolicy: Retain
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+  SharedFilesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: yoppinews-calendar-bot shared files
+      ContentUri: src/layers/shared_files
+      RetentionPolicy: Retain
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+
+  SummarizeSchedulesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/summarize_schedules/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref PipModulesLayer
+        - !Ref SharedFilesLayer
+      Events:
+        SummarizeSchedulesEvent:
+          Type: Schedule
+          Properties:
+            Schedule: !Sub ${SummarizeSchedule}
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub ${ConfigBucket}
+        - SNSPublishMessagePolicy:
+            TopicName:
+              !Select
+                - 5
+                - !Split
+                  - ":"
+                  - !Ref TweetTopic
+      Environment:
+        Variables:
+          TweetTopic: !Sub ${TweetTopic}
+          GoogleAPIKey: !Sub ${GoogleAPIKey}
+      Events:
+        SummarizeSchedulesEvent:
+          Type: Schedule
+          Properties:
+            Schedule: !Sub ${SummarizeSchedule}
+  SummarizeSchedulesFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        !Join
+          - ''
+          - - '/aws/lambda/'
+            - !Ref SummarizeSchedulesFunction
+      RetentionInDays: !Sub ${LogRetentionInDays}
+
+
+Outputs:
+  SummarizeSchedulesFunction:
+    Value: !Ref SummarizeSchedulesFunction
