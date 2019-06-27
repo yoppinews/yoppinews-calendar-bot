@@ -37,6 +37,7 @@ env.bak/
 venv.bak/
 
 env.*.json
+env.template.yaml
 
 config.*.yaml
 !config.template.yaml

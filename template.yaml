@@ -14,6 +14,8 @@ Globals:
         Stage: !Sub ${Stage}
         ConfigBucket: !Sub ${ConfigBucket}
         ConfigKeyName: !Sub ${ConfigKeyName}
+        TweetTopic: !Sub ${TweetTopic}
+        GoogleAPIKey: !Sub ${GoogleAPIKey}
 
 Parameters:
   Stage:
@@ -37,6 +39,12 @@ Parameters:
     Default: 'cron(0 15 * * ? *)'
 
 Resources:
+  NotifyScheduledEventsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Suspended
+
   PipModulesLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -55,6 +63,44 @@ Resources:
       CompatibleRuntimes:
         - python3.6
         - python3.7
+
+  NotifyScheduledEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/notify_scheduled_events/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref PipModulesLayer
+        - !Ref SharedFilesLayer
+      Events:
+        CheckEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'rate(1 minute)'
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub ${ConfigBucket}
+        - S3CrudPolicy:
+            BucketName: !Ref NotifyScheduledEventsBucket
+        - SNSPublishMessagePolicy:
+            TopicName:
+              !Select
+                - 5
+                - !Split
+                  - ":"
+                  - !Ref TweetTopic
+      Environment:
+        Variables:
+          CacheBucket: !Ref NotifyScheduledEventsBucket
+  NotifyScheduledEventsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        !Join
+          - ''
+          - - '/aws/lambda/'
+            - !Ref NotifyScheduledEventsFunction
+      RetentionInDays: !Sub ${LogRetentionInDays}
 
   SummarizeSchedulesFunction:
     Type: AWS::Serverless::Function
@@ -79,15 +125,6 @@ Resources:
                 - !Split
                   - ":"
                   - !Ref TweetTopic
-      Environment:
-        Variables:
-          TweetTopic: !Sub ${TweetTopic}
-          GoogleAPIKey: !Sub ${GoogleAPIKey}
-      Events:
-        SummarizeSchedulesEvent:
-          Type: Schedule
-          Properties:
-            Schedule: !Sub ${SummarizeSchedule}
   SummarizeSchedulesFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -102,3 +139,5 @@ Resources:
 Outputs:
   SummarizeSchedulesFunction:
     Value: !Ref SummarizeSchedulesFunction
+  NotifyScheduledEventsFunction:
+    Value: !Ref NotifyScheduledEventsFunction

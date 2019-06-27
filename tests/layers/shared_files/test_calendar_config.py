@@ -22,7 +22,9 @@ def test_calendar_bot_config():
                 'max_summarized_items': 40,
                 'summarized_message_template': '${y}/${m}/${d}'
                                                '${summarized_items}'
-                                               '#hashtag1 example.com'
+                                               '#hashtag1 example.com',
+                'notify_before_event_starts': 30,
+                'notification_message_template': '${title}'
             },
             {
                 'calendar_id': 'id02@group.calendar.google.com',
@@ -37,10 +39,14 @@ def test_calendar_bot_config():
         max_summarized_items=40,
         summarize_message_template='${y}/${m}/${d}'
                                    '${summarized_items}'
-                                   '#hashtag1 example.com'
+                                   '#hashtag1 example.com',
+        notify_before_event_starts=30,
+        notification_message_template='${title}'
     )
     assert calendars[1] == GoogleCalendar(
         calendar_id='id02@group.calendar.google.com',
         max_summarized_items=10,
-        summarize_message_template=None
+        summarize_message_template=None,
+        notify_before_event_starts=30,
+        notification_message_template=None
     )

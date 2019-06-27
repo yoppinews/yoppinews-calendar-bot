@@ -2,9 +2,10 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src/layers/pip_packages/python" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/layers/pip_modules/python" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/summarize_schedules" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/layers/shared_files/python" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/notify_scheduled_events" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

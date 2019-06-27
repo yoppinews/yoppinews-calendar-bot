@@ -1,53 +1,57 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import os
 import json
 import boto3
+import string
 import datetime
+
 from typing import List
 from logging import Logger
-from googleapiclient.discovery import build
 
 from message import TweetMessage
+from scheduled_event import GoogleCalendarAPI, ScheduledEventsRepository
 from calendar_config import CalendarBotConfig, GoogleCalendar
-from calendar_summarizer import GoogleCalendarSummarizer
-
 
 # env_vars
 stage = os.environ['Stage']
 config_bucket = os.environ['ConfigBucket']
 config_key_name = os.environ['ConfigKeyName']
+cache_bucket = os.environ['CacheBucket']
 tweet_topic = os.environ['TweetTopic']
 google_api_key = os.environ['GoogleAPIKey']
 
+s3 = boto3.client('s3') if stage != 'local' \
+    else boto3.client('s3',  endpoint_url='http://localstack:4572')
 sns = boto3.client('sns') if stage != 'local' \
     else boto3.client('sns', endpoint_url='http://localstack:4575')
-service = build('calendar', 'v3', developerKey=google_api_key, cache_discovery=False)
 
 
 def lambda_handler(_, __):
     config = CalendarBotConfig.initialize(stage, config_bucket, config_key_name)
-    summarizer = GoogleCalendarSummarizer(service, config.timezone, config.logger)
-    handle(summarizer, config.calendars, config.timezone, config.logger)
+    api = GoogleCalendarAPI(google_api_key, config.timezone)
+    handle(api, config.calendars, config.timezone, config.logger)
     return {}
 
 
 def handle(
-    summarizer: GoogleCalendarSummarizer,
+    api: GoogleCalendarAPI,
     calendars: List[GoogleCalendar],
     timezone: datetime.timezone,
     logger: Logger
 ):
-    date = datetime.datetime.now(timezone).date()
     for c in calendars:
-        if c.summarize_message_template is None:
+        if c.notification_message_template is None:
             continue
-        summaries = summarizer.summarize(c.calendar_id, c.summarize_message_template, date, c.max_summarized_items)
-        for s in summaries:
-            message = TweetMessage(s)
-            tweet(message, logger)
+        end = datetime.datetime.now(timezone) + datetime.timedelta(minutes=c.notify_before_event_starts)
+        start = end - datetime.timedelta(minutes=3)
+        repo = ScheduledEventsRepository(s3, cache_bucket, api, c.calendar_id)
+        events = repo.get_events(start, end)
+        for e in events:
+            if e.notify_needed:
+                text = string.Template(c.notification_message_template).substitute(e.dictionary)
+                tweet(TweetMessage(text), logger)
+                repo.mark_as_notified(e.item_id)
 
 
 def tweet(m: TweetMessage, logger: Logger):

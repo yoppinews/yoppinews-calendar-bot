@@ -66,16 +66,22 @@ class GoogleCalendar:
         calendar_id: str,
         max_summarized_items: int,
         summarize_message_template: Optional[str],
+        notify_before_event_starts: int,
+        notification_message_template: Optional[str],
     ):
         self._calendar_id = calendar_id
         self._max_summarized_items = max_summarized_items
         self._summarize_message_template = summarize_message_template
+        self._notify_before_event_starts = notify_before_event_starts
+        self._notification_message_template = notification_message_template
 
     def __repr__(self):
         return json.dumps({
             'calendar_id': self._calendar_id,
             'max_summarized_items': self._max_summarized_items,
-            'summarize_message_template': self._summarize_message_template
+            'summarize_message_template': self._summarize_message_template,
+            'notify_before_event_starts': self._notify_before_event_starts,
+            'notification_message_template': self._notification_message_template
         })
 
     def __eq__(self, other) -> bool:
@@ -84,17 +90,23 @@ class GoogleCalendar:
         return \
             self._calendar_id == other._calendar_id and \
             self._max_summarized_items == other._max_summarized_items and \
-            self._summarize_message_template == other._summarize_message_template
+            self._summarize_message_template == other._summarize_message_template and \
+            self._notify_before_event_starts == other._notify_before_event_starts and \
+            self.notification_message_template == other._notification_message_template
 
     @staticmethod
     def of(dic: dict) -> GoogleCalendar:
         calendar_id = dic['calendar_id']
         max_summarized_items = dic.get('max_summarized_items', 10)
         summarize_message_template = dic.get('summarized_message_template', None)
+        notify_before_event_starts = dic.get('notify_before_event_starts', 30)
+        notification_message_template = dic.get('notification_message_template', None)
         return GoogleCalendar(
             calendar_id,
             max_summarized_items,
-            summarize_message_template
+            summarize_message_template,
+            notify_before_event_starts,
+            notification_message_template,
         )
 
     @property
@@ -108,3 +120,11 @@ class GoogleCalendar:
     @property
     def summarize_message_template(self) -> Optional[str]:
         return self._summarize_message_template
+
+    @property
+    def notify_before_event_starts(self) -> int:
+        return self._notify_before_event_starts
+
+    @property
+    def notification_message_template(self) -> Optional[str]:
+        return self._notification_message_template
