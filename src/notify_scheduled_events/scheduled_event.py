@@ -1,3 +1,4 @@
+import re
 import botocore.errorfactory
 import datetime
 from typing import List, Dict
@@ -38,7 +39,7 @@ class ScheduledEvent:
         return {
             'id': self._item_id,
             'title': self._title,
-            'description': self._description,
+            'description': self.description,
             'y': self._start.year,
             'm': self._start.month,
             'd': self._start.day,
@@ -54,6 +55,11 @@ class ScheduledEvent:
     @property
     def notify_needed(self) -> bool:
         return self._notify_needed
+
+    @property
+    def description(self) -> str:
+        p = re.compile(r"<[^>]*?>")
+        return p.sub("", self._description)
 
 
 class ScheduledEventsRepository:
