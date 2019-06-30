@@ -14,6 +14,9 @@ def test_scheduled_event():
     )
     assert e.description == 'description'
 
+
+def test_scheduled_event_with_html_tags():
+    now = datetime.datetime.now()
     e = ScheduledEvent(
         item_id='id',
         title='title',
@@ -22,3 +25,15 @@ def test_scheduled_event():
         notify_needed=False
     )
     assert e.description == 'description'
+
+
+def test_scheduled_event_with_nbsp():
+    now = datetime.datetime.now()
+    e = ScheduledEvent(
+        item_id='id',
+        title='title',
+        description='<a href="page1">description&nbsp;description</a>',
+        start=now,
+        notify_needed=False
+    )
+    assert e.description == 'description' + chr(0x00a0) + 'description'
