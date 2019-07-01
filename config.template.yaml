@@ -2,14 +2,35 @@
 
 global_config:
   log_level: INFO
-  time_delta: 9
+  time_delta: 9   # JST = +9
 calendars:
   -
+    # Google Calendar ID
     calendar_id: 'calendar-id-01'
+
+    # if `summarized_message_template` is empty,
+    # do not summarize schedules of this calendar_id
+    # also if `notification_message_template` is empty,
+    # do not notify scheduled events of this calendar_id
+
+    # config for SummarizeSchedulesFunction
     max_summarized_items: 10
     summarized_message_template: |-
       🗓 ${y}/${m}/${d}
       {summarized_items}
       #hashtag example.com
+
+    # config for NotifyScheduledEventsFunction
+    notify_before_event_starts: 30  # min
+    notification_message_template: |-
+      ⏰ ${y}/${m}/${d} ${H}:${MM} Start: ${title}
+      ${description} #hashtag
+
   -
     calendar_id: 'calendar-id-02'
+
+    # config for NotifyScheduledEventsFunction
+    notify_before_event_starts: 30  # min
+    notification_message_template: |-
+      ⏰ ${y}/${m}/${d} ${H}:${MM} Start: ${title}
+      ${description} #hashtag

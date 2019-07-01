@@ -1,5 +1,7 @@
+import re
 import botocore.errorfactory
 import datetime
+import html.entities
 from typing import List, Dict
 from googleapiclient.discovery import build
 
@@ -38,7 +40,7 @@ class ScheduledEvent:
         return {
             'id': self._item_id,
             'title': self._title,
-            'description': self._description,
+            'description': self.description,
             'y': self._start.year,
             'm': self._start.month,
             'd': self._start.day,
@@ -54,6 +56,18 @@ class ScheduledEvent:
     @property
     def notify_needed(self) -> bool:
         return self._notify_needed
+
+    @property
+    def description(self) -> str:
+        s = re.compile(r"<[^>]*?>")
+        res = s.sub("", self._description)
+        for i in re.findall('&[a-zA-Z]+?;', res):
+            try:
+                r = html.entities.name2codepoint[i[1:-1]]
+                res = res.replace(i, chr(r))
+            except KeyError:
+                continue
+        return res
 
 
 class ScheduledEventsRepository:
