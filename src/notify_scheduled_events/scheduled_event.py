@@ -11,7 +11,7 @@ class GoogleCalendarAPI:
         self._service = build('calendar', 'v3', developerKey=api_key, cache_discovery=False)
         self._timezone = tz
 
-    def get_items(self, calendar_id: str, start: datetime.datetime, end: datetime.datetime, max_results: int):
+    def get_items(self, calendar_id: str, start: datetime.datetime, end: datetime.datetime, max_results: int) -> List[dict]:
         res = self._service.events().list(
             calendarId=calendar_id,
             timeMin=start.astimezone(self._timezone).isoformat(),
@@ -84,12 +84,13 @@ class ScheduledEventsRepository:
         for e in events:
             s = datetime.datetime.strptime(e['start']['dateTime'], '%Y-%m-%dT%H:%M:%S%z').astimezone(self._api.timezone)
             try:
+                item_id = e['id']
                 res.append(ScheduledEvent(
-                    item_id=e['id'],
-                    title=e['summary'],
-                    description=e['description'],
+                    item_id=item_id,
+                    title=e.get('summary', ''),
+                    description=e.get('description', ''),
                     start=s,
-                    notify_needed=self._notify_needed(e['id'])
+                    notify_needed=self._notify_needed(item_id)
                 ))
             except KeyError:
                 continue
